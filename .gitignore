@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Nunca subir credenciales: los .env llevan la base, Evolution, el modelo y las
+# claves del panel. Los .env.example sí van, con valores de mentira.
+.env
+.env.*
+!.env.example
+
+qr.png
+*.log
+.DS_Store

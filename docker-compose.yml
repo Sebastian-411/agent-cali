@@ -1,0 +1,73 @@
+# Cada servicio se despliega por separado y lee su propio archivo de entorno:
+#   backend/.env   -> secretos, base de datos, Evolution, modelo, pipeline
+#   frontend/.env  -> a dónde proxea nginx; sin secretos
+#
+# Este compose sirve para levantar todo junto en una máquina. Para desplegar en
+# hosts distintos, publica cada imagen y pásale a cada contenedor su .env:
+#   docker run --env-file backend/.env  ... agent-grupos-backend
+#   docker run --env-file frontend/.env ... agent-grupos-frontend
+
+services:
+  # Postgres local, OPCIONAL. Sólo arranca si lo pides:
+  #   docker compose --profile localdb up -d
+  # Si usas una base externa (lo normal), no la levantes y deja DATABASE_URL
+  # apuntando a ella en backend/.env.
+  db:
+    profiles: ["localdb"]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: agente
+      POSTGRES_PASSWORD: agente
+      POSTGRES_DB: agente
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agente"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    # DATABASE_URL NO se define aquí a propósito: lo que se pone en
+    # `environment` gana sobre `env_file`, y eso pisaría silenciosamente la base
+    # que configuraste en backend/.env.
+    environment:
+      PORT: "3000"
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Variable de BUILD: vacía = el navegador usa el mismo origen y llega al
+        # backend por el proxy /api de nginx.
+        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-}"
+    env_file: ./frontend/.env
+    ports:
+      # Sobreescribible desde la shell: FRONTEND_PORT=9000 docker compose up -d
+      - "${FRONTEND_PORT:-8081}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      # 127.0.0.1 y no "localhost": dentro del contenedor localhost resuelve
+      # primero a ::1 y nginx escucha sólo en IPv4.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
