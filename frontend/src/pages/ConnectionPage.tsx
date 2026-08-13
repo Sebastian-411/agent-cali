@@ -20,6 +20,57 @@ const STATE_LABEL: Record<string, string> = {
   close: '⚫ desconectado',
 }
 
+interface Check {
+  id: string
+  ok: boolean
+  label: string
+  detail: string
+  action: string
+}
+
+/** Responde de un vistazo a "¿ya está leyendo mensajes?". */
+function Diagnostico() {
+  const [data, setData] = useState<{ ok: boolean; checks: Check[] } | null>(null)
+
+  useEffect(() => {
+    const load = () =>
+      api<{ ok: boolean; checks: Check[] }>('/api/admin/diagnostics')
+        .then(setData)
+        .catch(() => {})
+    load()
+    const timer = setInterval(load, 15_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  if (!data) return null
+
+  return (
+    <div className="panel">
+      <h3>{data.ok ? '🟢 Está leyendo mensajes' : '🟡 Todavía no está leyendo'}</h3>
+      <table>
+        <tbody>
+          {data.checks.map((check) => (
+            <tr key={check.id}>
+              <td style={{ width: 28 }}>{check.ok ? '✅' : '❌'}</td>
+              <td style={{ width: 240 }}>{check.label}</td>
+              <td className="muted">
+                {check.detail}
+                {!check.ok && (
+                  <div style={{ fontSize: 12, marginTop: 2 }}>→ {check.action}</div>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
+        Se actualiza solo cada 15 segundos. Basta con que falle un paso para que no entre
+        ningún mensaje.
+      </p>
+    </div>
+  )
+}
+
 export default function ConnectionPage() {
   const [info, setInfo] = useState<InstanceState | null>(null)
   const [qr, setQr] = useState<string | null>(null)
@@ -84,6 +135,8 @@ export default function ConnectionPage() {
 
       <ErrorBox error={error} />
       {message && <div className="notice">{message}</div>}
+
+      <Diagnostico />
 
       <div className="panel">
         <h3>1 · WhatsApp</h3>

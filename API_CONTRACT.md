@@ -210,6 +210,15 @@ Estado de la conexión de WhatsApp y webhook configurado.
 Apunta el webhook de la instancia a `PUBLIC_URL/api/webhooks/evolution`.
 `400` si falta `PUBLIC_URL`.
 
+### `GET /api/admin/diagnostics`
+Revisa la cadena completa: WhatsApp vinculado → webhook apuntando aquí → grupos
+habilitados → mensajes entrando. Basta con que falle uno para que no llegue nada.
+```json
+{ "ok": false,
+  "checks": [ { "id": "webhook", "ok": false, "label": "Webhook apuntando a este backend",
+                "detail": "sin configurar", "action": "Usa el botón de abajo..." } ] }
+```
+
 ### `POST /api/admin/run-cycle`
 Ejecuta un ciclo completo del pipeline de forma síncrona.
 
