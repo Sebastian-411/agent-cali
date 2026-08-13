@@ -40,7 +40,10 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     response = await fetch(apiUrl(path), {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
+        // Sólo declaramos JSON cuando de verdad mandamos algo: anunciar
+        // application/json con el cuerpo vacío hace que el servidor rechace la
+        // petición (FST_ERR_CTP_EMPTY_JSON_BODY).
+        ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
         'x-api-key': getApiKey(),
         ...(init.headers ?? {}),
       },

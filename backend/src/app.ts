@@ -19,6 +19,23 @@ export async function buildApp(): Promise<FastifyInstance> {
     bodyLimit: 5 * 1024 * 1024,
   })
 
+  // Varias acciones (configurar el webhook, sincronizar grupos, forzar un ciclo)
+  // son POST sin cuerpo. Si el cliente igual anuncia application/json, Fastify
+  // los rechaza con FST_ERR_CTP_EMPTY_JSON_BODY: aquí un cuerpo vacío se trata
+  // como un objeto vacío, que es lo que esas rutas esperan.
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (_request, body, done) => {
+    const text = typeof body === 'string' ? body.trim() : ''
+    if (text === '') return done(null, {})
+    try {
+      done(null, JSON.parse(text))
+    } catch (error) {
+      // El parser propio pierde el 400 que pone el de Fastify: un JSON
+      // malformado es culpa del cliente, no un fallo del servidor.
+      ;(error as Error & { statusCode?: number }).statusCode = 400
+      done(error as Error, undefined)
+    }
+  })
+
   // Sólo si el panel vive en otro origen. Con el proxy /api del frontend no
   // hace falta, y dejarlo apagado evita exponer la API a orígenes arbitrarios.
   if (config.corsOrigins.length > 0) {
