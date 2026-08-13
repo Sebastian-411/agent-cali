@@ -1,6 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 
-import { config } from './config.js'
+import { secrets } from './secrets.js'
 
 /**
  * Seudonimiza un remitente. El número real nunca se persiste ni se publica:
@@ -9,7 +9,7 @@ import { config } from './config.js'
  */
 export function hashSender(jid: string): string {
   const normalized = jid.split(':')[0]!.split('@')[0]!.replace(/\D/g, '')
-  return createHmac('sha256', config.senderSalt).update(normalized).digest('hex').slice(0, 32)
+  return createHmac('sha256', secrets().senderSalt).update(normalized).digest('hex').slice(0, 32)
 }
 
 /** Últimos 2 dígitos, sólo para que un admin distinga fuentes en la UI. */

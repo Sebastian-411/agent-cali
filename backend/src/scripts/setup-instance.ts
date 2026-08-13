@@ -12,6 +12,7 @@ import { resolve } from 'node:path'
 
 import { evolution } from '../evolution/client.js'
 import { config } from '../lib/config.js'
+import { loadSecrets, secrets } from '../lib/secrets.js'
 
 const QR_PATH = resolve(process.cwd(), 'qr.png')
 
@@ -25,6 +26,7 @@ function stateOf(payload: unknown): string {
 }
 
 async function main(): Promise<void> {
+  await loadSecrets()
   const name = config.evolution.instance
   if (!name) throw new Error('Falta EVOLUTION_INSTANCE en el .env')
 
@@ -75,7 +77,7 @@ async function main(): Promise<void> {
   }
 
   const url = `${config.publicUrl}/api/webhooks/evolution`
-  await evolution.setWebhook(name, url, config.webhookToken)
+  await evolution.setWebhook(name, url, secrets().webhookToken)
   console.log(`✅ Webhook apuntando a ${url}`)
   console.log('\nSiguiente paso: npm run sync:groups')
 }

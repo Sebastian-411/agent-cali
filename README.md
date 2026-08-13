@@ -51,13 +51,14 @@ En `frontend/.env` no va ningún secreto a propósito: todo lo que se compila en
 el bundle lo puede leer cualquiera que abra el panel. La `ADMIN_API_KEY` la
 escribe cada administrador al entrar.
 
+El backend necesita **7 variables**; el panel, **una**. Todo lo demás tiene
+valores por defecto que funcionan, y `WEBHOOK_TOKEN` / `SENDER_SALT` se generan
+solos en el primer arranque y quedan guardados en la base.
+
 ```bash
 cp backend/.env.example  backend/.env
 cp frontend/.env.example frontend/.env
-
-# genera los secretos del backend
-for v in WEBHOOK_TOKEN ADMIN_API_KEY SENDER_SALT; do echo "$v=$(openssl rand -hex 32)"; done
-# pégalos en backend/.env, junto con EVOLUTION_API_KEY, GEMINI_API_KEY y PUBLIC_URL
+# completa las 7 de backend/.env (ADMIN_API_KEY: openssl rand -hex 32)
 
 cd backend
 npm install

@@ -1,6 +1,7 @@
 import { buildApp } from './app.js'
 import { runMigrations } from './db/migrate.js'
 import { assertRuntimeConfig, config } from './lib/config.js'
+import { loadSecrets } from './lib/secrets.js'
 import { startScheduler, stopScheduler } from './pipeline/scheduler.js'
 
 /**
@@ -28,6 +29,11 @@ async function migrateWithRetry(attempts = 10): Promise<void> {
 async function main(): Promise<void> {
   assertRuntimeConfig()
   await migrateWithRetry()
+
+  const { generated } = await loadSecrets()
+  if (generated.length > 0) {
+    console.log(`[secretos] generados y guardados en la base: ${generated.join(', ')}`)
+  }
 
   const app = await buildApp()
   await app.listen({ port: config.port, host: '0.0.0.0' })

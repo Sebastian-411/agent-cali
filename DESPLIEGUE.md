@@ -52,24 +52,21 @@ Crea una **App** apuntando al repo, con **Build path** `/backend` (usa su
 Dockerfile). Puerto interno **3000**. Asígnale un dominio, p. ej.
 `agente-api.tudominio.com`.
 
-Variables de entorno — el contenido de `backend/.env.example`, con estos valores
-reales:
+Variables de entorno — **siete**, nada más:
 
 ```bash
 DATABASE_URL=postgres://...            # la del paso 1
-PUBLIC_URL=https://agente-api.tudominio.com   # ESTE dominio, sin barra final
-
 EVOLUTION_API_URL=https://tu-evolution-api.ejemplo.com
 EVOLUTION_API_KEY=...
 EVOLUTION_INSTANCE=agente_grupos       # la instancia DEDICADA
-
-WEBHOOK_TOKEN=<openssl rand -hex 32>
-ADMIN_API_KEY=<openssl rand -hex 32>
-SENDER_SALT=<openssl rand -hex 32>     # cambiarlo rompe la deduplicación histórica
-
+PUBLIC_URL=https://agente-api.tudominio.com   # ESTE dominio, sin barra final
+ADMIN_API_KEY=...                      # openssl rand -hex 32
 GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-2.5-flash
 ```
+
+El resto de `backend/.env.example` está comentado: son ajustes con valores por
+defecto que funcionan. `WEBHOOK_TOKEN` y `SENDER_SALT` **no se configuran**: el
+backend los genera en el primer arranque y los guarda en la base.
 
 `PUBLIC_URL` es el error más común: tiene que ser el dominio **del backend**, no
 el del panel, porque es la dirección a la que Evolution enviará los mensajes.
@@ -102,9 +99,7 @@ git clone <repo> && cd agent-grupos
 cp backend/.env.example  backend/.env
 cp frontend/.env.example frontend/.env
 
-for v in WEBHOOK_TOKEN ADMIN_API_KEY SENDER_SALT; do echo "$v=$(openssl rand -hex 32)"; done
-# pega esos valores en backend/.env, junto con EVOLUTION_API_KEY, GEMINI_API_KEY
-# y PUBLIC_URL (el dominio público del backend)
+# completa las 7 variables de backend/.env (ADMIN_API_KEY: openssl rand -hex 32)
 
 docker compose up -d --build
 ```
@@ -196,9 +191,9 @@ Los reportes tardan: primero pasa la ventana de agregación
 | Rotar la clave del panel | Cambia `ADMIN_API_KEY` y reinicia. Todos vuelven a iniciar sesión |
 | Ver errores | Logs del backend; los fallos del pipeline quedan como `PIPELINE_ERROR` en la bitácora |
 
-**No cambies `SENDER_SALT` con datos en producción**: los remitentes se
-seudonimizan con esa sal, y cambiarla hace que la misma persona cuente como una
-fuente nueva y pueda votar otra vez.
+**No borres la tabla `settings`**: ahí viven el token del webhook y la sal con
+la que se seudonimizan los remitentes. Si se pierde la sal, la misma persona
+pasa a contar como una fuente nueva y puede votar otra vez.
 
 ---
 

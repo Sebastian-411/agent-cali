@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 
-import { config } from '../lib/config.js'
 import { safeEqual } from '../lib/hash.js'
+import { secrets } from '../lib/secrets.js'
 import { handleWebhook } from '../pipeline/ingest.js'
 import type { EvolutionWebhookBody } from '../pipeline/ingest.js'
 
@@ -16,7 +16,8 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
   // Evolution puede añadir el nombre del evento a la ruta cuando byEvents=true.
   const handler = async (request: any, reply: any) => {
     const token = tokenFrom(request.headers, request.query ?? {})
-    if (!config.webhookToken || !safeEqual(token, config.webhookToken)) {
+    const expected = secrets().webhookToken
+    if (!expected || !safeEqual(token, expected)) {
       return reply.code(401).send({ error: 'token inválido' })
     }
 

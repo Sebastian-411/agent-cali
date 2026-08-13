@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 
 import { evolution } from '../evolution/client.js'
 import { config } from '../lib/config.js'
+import { secrets } from '../lib/secrets.js'
 import { runCycle } from '../pipeline/scheduler.js'
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
@@ -33,7 +34,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     }
     const url = `${config.publicUrl}/api/webhooks/evolution`
     try {
-      const result = await evolution.setWebhook(config.evolution.instance, url, config.webhookToken)
+      const result = await evolution.setWebhook(config.evolution.instance, url, secrets().webhookToken)
       return { ok: true, url, result }
     } catch (error) {
       return reply.code(502).send({ error: String(error) })
